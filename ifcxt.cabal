@@ -4,8 +4,36 @@
 name:                ifcxt
 version:             0.1.0.0
 synopsis:            put if statements within type constraints
--- description:
-homepage:            github.com/mikeizbicki/ifcxt
+description:
+
+    This package introduces the @ifCxt@ function,
+    which lets your write if statements that depend on a polymorphic variable's class instances.
+    For example, we can make a version of 'show' that can be called on any type:
+
+    .
+
+    > cxtShow :: forall a. IfCxt (Show a) => a -> String
+    > cxtShow a = ifCxt (Proxy::Proxy (Show a))
+    >     (show a)
+    >     "<<unshowable>>"
+
+    Running this function in ghci, we get:
+
+    .
+
+    >>> cxtShow (1 :: Int)
+    "1"
+
+    .
+
+    >>> cxtShow (id :: a -> a)
+    "<<unshowable>>"
+
+    .
+
+    See the project webpage http://github.com/mikeizbicki/ifcxt for more details.
+
+homepage:            http://github.com/mikeizbicki/ifcxt
 license:             BSD3
 license-file:        LICENSE
 author:              Mike Izbicki
@@ -16,10 +44,14 @@ build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
 
+source-repository head
+    type: git
+    location: http://github.com/mikeizbicki/ifcxt
+
 library
   exposed-modules:     IfCxt, IfCxt.Examples
   -- other-modules:
-  extensions:
+  default-extensions:
     ConstraintKinds,
     Rank2Types,
     FlexibleInstances,
