@@ -1,17 +1,15 @@
 # IfCxt
 
-This package introduces the `ifCxt` function.
-It has the following type signature:
+This package introduces the function:
 ```
 ifCxt :: IfCxt cxt => proxy cxt -> (cxt => a) -> a -> a
 ```
 This function acts like an `if` statement where the `proxy cxt` parameter is the condition.
-`cxt` has kind `Constraint`.
 If the type checker can satisfy the `cxt` constraint, then the second argument `cxt => a` is returned;
 otherwise, the third argument `a` is returned.
 
-Before seeing more details about how this works,
-let's look at three examples on why you might want this functionality.
+Before seeing more details about how `ifCxt` is implemented,
+let's look at three examples of how to use it.
 
 ### Example 1: show every type
 
@@ -36,7 +34,7 @@ ghci> cxtShow (id :: a -> a)
 "<<unshowable>>"
 ```
 
-### Example 2: make your code maximally efficient
+### Example 2: make your code asymptotically efficient
 
 The `nub` function removes duplicate elements from lists.
 It can be defined as:
@@ -68,14 +66,40 @@ cxtNub = ifCxt (Proxy::Proxy (Ord a)) nubOrd nub
 
 ### Example 3: make your code numerically stable
 
+The simplest way to sum a list of numbers is:
+```
+sumSimple :: Num a => [a] -> a
+sumSimple = foldl' (+) 0
+```
+This method has numerical stability issues on floating point representations.
+[Kahan summation](https://en.wikipedia.org/wiki/Kahan_summation_algorithm) is a more accurate technique shown below:
+```
+sumKahan :: Num a => [a] -> a
+sumKahan = snd . foldl' go (0,0)
+    where
+        go (c,t) i = ((t'-t)-y,t')
+            where
+                y = i-c
+                t' = t+y
+```
+Because Kahan summation does a lot more work than simple summation, we would prefer not to run it on non-floating point types.
+The `sumCxt` function below accomplishes this:
+```
+cxtSum :: forall a. (Num a, IfCxt (Floating a)) => [a] -> a
+cxtSum = ifCxt (Proxy::Proxy (Floating a)) sumKahan sumSimple
+```
+Notice that the `ifCxt` function is conditioning on the `Floating a` constraint,
+which isn't actually *used* by the `sumKahan` function.
 
 ## How it works
 
 The magic of the technique is in the `IfCxt` class:
 ```
-class IfCxt cxt where
+class IfCxt (cxt :: Constraint) where
     ifCxt :: proxy cxt -> (cxt => a) -> a -> a
 ```
+(Notice that making a constraint an instance of a class requires the`ConstraintKinds` extension,
+and the higher order `(cxt => a)` parameter requires the `RankNTypes` extension.)
 
 There is a "global" instance defined as:
 ```

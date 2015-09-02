@@ -42,17 +42,33 @@ cxtShowTypeable = ifCxt (Proxy::Proxy (Show a))
 -- If the type @a@ does have an "Ord" constraint, then the order of the elements may change.
 cxtNub :: forall a. (Eq a, IfCxt (Ord a)) => [a] -> [a]
 cxtNub = ifCxt (Proxy::Proxy (Ord a)) nubOrd nub
-
-nubOrd :: Ord a => [a] -> [a]
-nubOrd = go . sort
     where
-        go (x1:x2:xs)
-            | x1==x2    =      go (x2:xs)
-            | otherwise = x1 : go (x2:xs)
-        go [x] = [x]
-        go []  = []
+        nubOrd :: Ord a => [a] -> [a]
+        nubOrd = go . sort
+            where
+                go (x1:x2:xs)
+                    | x1==x2    =      go (x2:xs)
+                    | otherwise = x1 : go (x2:xs)
+                go [x] = [x]
+                go []  = []
+
+-- | A version of "sum" that uses the numerically stable Kahan summation technique on floating point values.
+cxtSum :: forall a. (Num a, IfCxt (Floating a)) => [a] -> a
+cxtSum = ifCxt (Proxy::Proxy (Floating a)) sumKahan sumSimple
+    where
+        sumSimple :: Num b => [b] -> b
+        sumSimple = foldl' (+) 0
+
+        sumKahan :: Num b => [b] -> b
+        sumKahan = snd . foldl' go (0,0)
+            where
+                go (c,t) i = ((t'-t)-y,t')
+                    where
+                        y = i-c
+                        t' = t+y
 
 class Magic
 
+-- | This function behaves differently depending on whether there exists a 'Magic' instance or not.
 magic :: Int
 magic = ifCxt (Proxy::Proxy Magic) 1 2
