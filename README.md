@@ -110,7 +110,7 @@ What this says is that if no more specific instance is available, then the "glob
 Then for every instance of every other class, we need to define an overlapping `IfCxt` instance that always returns the `t` (true) parameter.
 For example, for `Show Int`, we define:
 ```
-instance {-# OVERLAPPS #-} IfCxt cxt where ifCxt _ t f = t
+instance {-# OVERLAPS #-} IfCxt cxt where ifCxt _ t f = t
 ```
 
 This is a lot of boilerplate, so the template haskell function `mkIfCxtInstances` can be used to define these instances automatically.
