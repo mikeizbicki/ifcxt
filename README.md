@@ -40,7 +40,7 @@ The `nub` function removes duplicate elements from lists.
 It can be defined as:
 
 ```
-nub :: Eq => [a] -> [a]
+nub :: Eq a => [a] -> [a]
 nub []     =  []
 nub (x:xs) =  x : nub (filter (x/=) xs)
 ```
