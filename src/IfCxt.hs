@@ -64,4 +64,4 @@ mkIfCxtInstances n = do
                     ]
                 ]
 
-        otherwise -> error $ show n ++ " not a class name"
+        otherwise -> fail $ show n ++ " is not a class name."
