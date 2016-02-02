@@ -60,3 +60,14 @@ library
   build-depends:       base >=4.8 && <4.9, template-haskell >=2.10 && <2.11
   hs-source-dirs:      src
   default-language:    Haskell2010
+
+test-suite test
+  default-language:    Haskell2010
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Main.hs
+  build-depends:       base >= 4.8
+                     , ifcxt
+                     , QuickCheck
+                     , tasty >= 0.7
+                     , tasty-quickcheck
