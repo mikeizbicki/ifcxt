@@ -11,14 +11,17 @@ import           Test.Tasty.QuickCheck
 mkIfCxtInstances ''Ord
 
 main = defaultMain $ testGroup "All tests" [
-    testProperty "Find Ord for Int"   haveLTEInt
-  , testProperty "Find Ord for [Int]" haveLTEListInt
+    testProperty "Find Ord for Int"        haveOrdInt
+  , testProperty "Find Ord for [Int]"      haveOrdListInt
+  , testProperty "No Ord for (Int -> Int)" noOrdFuncInt
   ]
 
 -- Tests
 
-haveLTEInt     = isJust $ getLTE (Proxy :: Proxy Int)
-haveLTEListInt = isJust $ getLTE (Proxy :: Proxy [Int])
+haveOrdInt     = isJust $ getLTE (Proxy :: Proxy Int)
+haveOrdListInt = isJust $ getLTE (Proxy :: Proxy [Int])
+
+noOrdFuncInt = isNothing $ getLTE (Proxy :: Proxy (Int -> Int))
 
 -- Helpers
 
