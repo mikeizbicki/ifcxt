@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, FlexibleInstances, FlexibleContexts, KindSignatures, ScopedTypeVariables, TemplateHaskell, ConstraintKinds #-}
+{-# LANGUAGE RankNTypes, FlexibleInstances, FlexibleContexts, KindSignatures, ScopedTypeVariables, TemplateHaskell, ConstraintKinds, IncoherentInstances #-}
 
 module Main where
 
@@ -11,17 +11,27 @@ import           Test.Tasty.QuickCheck
 mkIfCxtInstances ''Ord
 
 main = defaultMain $ testGroup "All tests" [
-    testProperty "Find Ord for Int"        haveOrdInt
-  , testProperty "Find Ord for [Int]"      haveOrdListInt
-  , testProperty "No Ord for (Int -> Int)" noOrdFuncInt
+    testProperty      "Find Ord for Int"              findOrdInt
+  , testProperty      "Find Ord for [Int]"            findOrdListInt
+  , testProperty        "No Ord for (Int -> Int)" notFoundOrdFuncInt
+  , testProperty        "No Ord for [Int -> Int]" notFoundOrdListFuncInt
+  , testProperty       "Get Ord for Int"              haveOrdInt
+  , testProperty       "Get Ord for [Int]"            haveOrdListInt
+  , testProperty "Can't get Ord for (Int -> Int)"       noOrdFuncInt
+  , testProperty "Can't get Ord for [Int -> Int]"       noOrdListFuncInt
   ]
 
 -- Tests
 
-haveOrdInt     = isJust $ getLTE (Proxy :: Proxy Int)
-haveOrdListInt = isJust $ getLTE (Proxy :: Proxy [Int])
+findOrdInt             = ifCxt (Proxy :: Proxy (Ord Int))          True  False
+findOrdListInt         = ifCxt (Proxy :: Proxy (Ord [Int]))        True  False
+notFoundOrdFuncInt     = ifCxt (Proxy :: Proxy (Ord (Int -> Int))) False True
+notFoundOrdListFuncInt = ifCxt (Proxy :: Proxy (Ord [Int -> Int])) False True
 
-noOrdFuncInt = isNothing $ getLTE (Proxy :: Proxy (Int -> Int))
+haveOrdInt       = isJust    $ getLTE (Proxy :: Proxy Int)
+haveOrdListInt   = isJust    $ getLTE (Proxy :: Proxy [Int])
+noOrdFuncInt     = isNothing $ getLTE (Proxy :: Proxy (Int -> Int))
+noOrdListFuncInt = isNothing $ getLTE (Proxy :: Proxy [Int -> Int])
 
 -- Helpers
 

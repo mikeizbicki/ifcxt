@@ -40,28 +40,55 @@ mkIfCxtInstances n = do
 
     info <- reify n
     case info of
-        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) ys) -> return $
+        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) _) -> return $
             if isInstanceOfIfCxt (AppT classt t)
-                then []
-                else [ InstanceD
-                    cxt
-                    (AppT
-                        (ConT ''IfCxt)
-                        (AppT
-                            (ConT n)
-                            t
-                        )
-                    )
-                    [ FunD 'ifCxt
-                        [ Clause
-                            [ VarP $ mkName "proxy"
-                            , VarP $ mkName "t"
-                            , VarP $ mkName "f"
-                            ]
-                            ( NormalB ( VarE $ mkName "t") )
-                            []
-                        ]
-                    ]
-                ]
-
+               then []
+               else mkInstance cxt classt t n
         otherwise -> fail $ show n ++ " is not a class name."
+
+mkInstance :: Cxt -> Type -> Type -> Name -> [Dec]
+mkInstance cxt classt t n = [
+    InstanceD
+        []
+        (AppT
+            (ConT ''IfCxt)
+            (expandCxt ((AppT (ConT n) t):cxt))
+        )
+        [ FunD 'ifCxt
+            [ Clause
+                [ VarP $ mkName "proxy"
+                , VarP $ mkName "t"
+                , VarP $ mkName "f"
+                ]
+                (NormalB (mkIfCxtFun cxt))
+                []
+            ]
+        ]
+    ]
+
+-- | Append an instance's constraints to make a tuple. For example, if we have:
+--
+-- > instance (Show a) => Show [a]
+--
+-- Rather than making an instance "IfCxt (Show [a])", which is useless without
+-- the "Show a" instance, we instead make "IfCxt (Show [a], Show a)", which is
+-- self-contained.
+expandCxt :: Cxt -> Type
+expandCxt [t] = t
+expandCxt ts  = foldl AppT (TupleT (length ts)) ts
+
+-- | Creates an implementation of "ifCxt". If our instance has no extra
+-- constraints, e.g. deriving "IfCxt (Show Bool)" from "Show Bool", we simply
+-- return the first argument.
+--
+-- If we have extra constraints, e.g. deriving "IfCxt (Show [a], Show a)" from
+-- "Show a => Show [a]", we call "ifCxt" recursively to bring those instances in
+-- scope. We only return the first argument if all constraints are satisfied.
+mkIfCxtFun :: Cxt -> Exp
+mkIfCxtFun []     = VarE $ mkName "t"
+mkIfCxtFun (c:cs) = AppE (AppE (AppE (VarE 'ifCxt)
+                                     proxy)
+                               (mkIfCxtFun cs))
+                         (VarE $ mkName "f")
+    where proxy = SigE (ConE 'Proxy)
+                       (AppT (ConT ''Proxy) c)
