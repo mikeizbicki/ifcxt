@@ -49,11 +49,8 @@ mkIfCxtInstances n = do
 mkInstance :: Cxt -> Type -> Type -> Name -> [Dec]
 mkInstance cxt classt t n = [
     InstanceD
-        []
-        (AppT
-            (ConT ''IfCxt)
-            (expandCxt ((AppT (ConT n) t):cxt))
-        )
+        (map relaxCxt cxt)
+        (relaxCxt (AppT (ConT n) t))
         [ FunD 'ifCxt
             [ Clause
                 [ VarP $ mkName "proxy"
@@ -66,16 +63,10 @@ mkInstance cxt classt t n = [
         ]
     ]
 
--- | Append an instance's constraints to make a tuple. For example, if we have:
---
--- > instance (Show a) => Show [a]
---
--- Rather than making an instance "IfCxt (Show [a])", which is useless without
--- the "Show a" instance, we instead make "IfCxt (Show [a], Show a)", which is
--- self-contained.
-expandCxt :: Cxt -> Type
-expandCxt [t] = t
-expandCxt ts  = foldl AppT (TupleT (length ts)) ts
+-- | "Relax" constraints by wrapping in "IfCxt".
+relaxCxt :: Type -> Type
+relaxCxt t@(AppT (ConT c) _) | c == ''IfCxt = t
+relaxCxt t                                  = AppT (ConT ''IfCxt) t
 
 -- | Creates an implementation of "ifCxt". If our instance has no extra
 -- constraints, e.g. deriving "IfCxt (Show Bool)" from "Show Bool", we simply
