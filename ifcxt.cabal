@@ -2,7 +2,7 @@
 --  see http://haskell.org/cabal/users-guide/
 
 name:                ifcxt
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            put if statements within type constraints
 description:
 

@@ -40,7 +40,7 @@ mkIfCxtInstances n = do
 
     info <- reify n
     case info of
-        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) _) -> return $
+        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) ys) -> return $
             if isInstanceOfIfCxt (AppT classt t)
                then []
                else mkInstance cxt classt t n
@@ -72,9 +72,10 @@ relaxCxt t                                  = AppT (ConT ''IfCxt) t
 -- constraints, e.g. deriving "IfCxt (Show Bool)" from "Show Bool", we simply
 -- return the first argument.
 --
--- If we have extra constraints, e.g. deriving "IfCxt (Show [a], Show a)" from
--- "Show a => Show [a]", we call "ifCxt" recursively to bring those instances in
--- scope. We only return the first argument if all constraints are satisfied.
+-- If we have extra constraints, e.g. deriving
+-- "IfCxt (Show a) => IfCxt(Show [a])" from "Show a => Show [a]", we call
+-- "ifCxt" recursively to bring those instances in scope. We only return the
+-- first argument if all constraints are satisfied.
 mkIfCxtFun :: Cxt -> Exp
 mkIfCxtFun []     = VarE $ mkName "t"
 mkIfCxtFun (c:cs) = AppE (AppE (AppE (VarE 'ifCxt)
