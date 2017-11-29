@@ -1,0 +1,32 @@
+language: c
+
+# explicitly request container-based infrastructure
+sudo: false
+
+matrix:
+  include:
+    - env: CABALVER=1.22 GHCVER=7.10.3
+      addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3],sources: [hvr-ghc]}}
+    - env: CABALVER=1.24 GHCVER=8.0.2
+      addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2],sources: [hvr-ghc]}}
+    - env: CABALVER=2.0 GHCVER=8.2.2
+      addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2],sources: [hvr-ghc]}}
+    - env: CABALVER=head GHCVER=head
+      addons: {apt: {packages: [cabal-install-head,ghc-head],  sources: [hvr-ghc]}}
+
+  allow_failures:
+   - env: CABALVER=head GHCVER=head
+   - env: CABALVER=2.0 GHCVER=8.2.2
+
+before_install:
+ - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
+
+install:
+ - travis_retry cabal update
+ - cabal install --only-dependencies --enable-tests --force-reinstalls
+
+script:
+ - cabal configure --enable-tests
+#--enable-library-coverage || cabal configure --enable-tests --enable-coverage
+ - cabal build
+ - cabal test
