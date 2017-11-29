@@ -34,13 +34,21 @@ mkIfCxtInstances :: Name -> Q [Dec]
 mkIfCxtInstances n = do
     info <- reify ''IfCxt
     let instancesOfIfCxt = case info of
+#if MIN_VERSION_template_haskell(2,11,0)
+            ClassI _ xs -> map (\(InstanceD _ _ (AppT _ t) _) -> t) xs
+#else
             ClassI _ xs -> map (\(InstanceD _ (AppT _ t) _) -> t) xs
+#endif
 
         isInstanceOfIfCxt t = t `elem` instancesOfIfCxt
 
     info <- reify n
     case info of
+#if MIN_VERSION_template_haskell(2,11,0)
+        ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD _ cxt (AppT classt t) ys) -> return $
+#else
         ClassI _ xs -> fmap concat $ forM xs $ \(InstanceD cxt (AppT classt t) ys) -> return $
+#endif
             if isInstanceOfIfCxt (AppT classt t)
                then []
                else mkInstance cxt classt t n
@@ -49,6 +57,9 @@ mkIfCxtInstances n = do
 mkInstance :: Cxt -> Type -> Type -> Name -> [Dec]
 mkInstance cxt classt t n = [
     InstanceD
+#if MIN_VERSION_template_haskell(2,11,0)
+        Nothing
+#endif
         (map relaxCxt cxt)
         (relaxCxt (AppT (ConT n) t))
         [ FunD 'ifCxt
