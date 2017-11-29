@@ -16,6 +16,7 @@ matrix:
 
   allow_failures:
    - env: CABALVER=head GHCVER=head
+   - env: CABALVER=2.0 GHCVER=8.2.2
 
 before_install:
  - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
